@@ -1,0 +1,311 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Developer/Company Information
+model Developer {
+  id           String    @id @default(cuid())
+  externalId   Int       @unique @map("external_id") // developer_company_id from Estaty
+  name         String
+  slug         String    @unique
+  logo         String?
+  description  String?
+  website      String?
+  phone        String?
+  email        String?
+  headquarters String?
+  
+  // Relationships
+  properties   Property[]
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  @@map("developers")
+}
+
+// Location/City Information
+model City {
+  id         String     @id @default(cuid())
+  externalId Int        @unique @map("external_id") // city_id from Estaty
+  name       String
+  slug       String     @unique
+  nameAr     String?    @map("name_ar")
+  country    String     @default("UAE")
+  latitude   Float?
+  longitude  Float?
+  
+  // Relationships
+  properties Property[]
+  districts  District[]
+  
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  
+  @@map("cities")
+}
+
+// District/Neighborhood Information
+model District {
+  id         String     @id @default(cuid())
+  externalId Int?       @unique @map("external_id") // district_id from Estaty
+  name       String
+  slug       String     @unique
+  nameAr     String?    @map("name_ar")
+  cityId     String     @map("city_id")
+  latitude   Float?
+  longitude  Float?
+  
+  // Relationships
+  city       City       @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  properties Property[]
+  
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  
+  @@map("districts")
+}
+
+// Property/Project Information
+model Property {
+  id                String            @id @default(cuid())
+  externalId        Int               @unique @map("external_id") // property.id from Estaty
+  title             String
+  slug              String            @unique
+  description       String?
+  developerId       String            @map("developer_id")
+  cityId            String            @map("city_id")
+  districtId        String?           @map("district_id")
+  
+  // Property Details
+  status            PropertyStatus    @default(UPCOMING)
+  salesStatus       SalesStatus       @default(AVAILABLE)
+  propertyType      PropertyType      @default(RESIDENTIAL)
+  
+  // Location
+  address           String?
+  latitude          Float?
+  longitude         Float?
+  
+  // Pricing (in AED)
+  minPrice          Float?            @map("min_price")
+  maxPrice          Float?            @map("max_price")
+  currency          String            @default("AED")
+  
+  // Area (in sqft)
+  minArea           Float?            @map("min_area")
+  maxArea           Float?            @map("max_area")
+  areaUnit          String            @default("sqft") @map("area_unit")
+  
+  // Timeline
+  launchDate        DateTime?         @map("launch_date")
+  deliveryDate      DateTime?         @map("delivery_date")
+  handoverYear      Int?              @map("handover_year")
+  handoverQuarter   Int?              @map("handover_quarter")
+  
+  // Media
+  heroImage         String?           @map("hero_image")
+  brochureUrl       String?           @map("brochure_url")
+  videoUrl          String?           @map("video_url")
+  
+  // Features
+  amenities         String[]          // Array of amenity names
+  facilities        String[]          // Array of facility names
+  paymentPlans      String[]          @map("payment_plans") // Array of payment plan types
+  
+  // SEO
+  metaTitle         String?           @map("meta_title")
+  metaDescription   String?           @map("meta_description")
+  
+  // Relationships
+  developer         Developer         @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  city              City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  district          District?         @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  units             Unit[]
+  images            PropertyImage[]
+  floorPlans        FloorPlan[]
+  
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  
+  @@map("properties")
+}
+
+// Unit/Apartment Information
+model Unit {
+  id             String        @id @default(cuid())
+  externalId     Int?          @unique @map("external_id") // unit id from Estaty if available
+  propertyId     String        @map("property_id")
+  title          String
+  
+  // Unit Details
+  unitType       String        @map("unit_type") // Studio, 1BR, 2BR, etc.
+  bedrooms       Int?
+  bathrooms      Float?
+  size           Float?        // in sqft
+  price          Float?        // in AED
+  pricePerSqft   Float?        @map("price_per_sqft")
+  
+  // Unit Features
+  floor          Int?
+  view           String?       // Sea view, City view, etc.
+  orientation    String?       // North, South, East, West
+  balcony        Boolean       @default(false)
+  maidRoom       Boolean       @default(false) @map("maid_room")
+  studyRoom      Boolean       @default(false) @map("study_room")
+  laundryRoom    Boolean       @default(false) @map("laundry_room")
+  
+  // Availability
+  status         UnitStatus    @default(AVAILABLE)
+  availability   Int           @default(1) // Number of units available
+  
+  // Financial
+  serviceCharge  Float?        @map("service_charge") // Annual service charge
+  paymentPlan    Json?         @map("payment_plan") // Payment plan details as JSON
+  
+  // Relationships
+  property       Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  floorPlans     FloorPlan[]
+  images         UnitImage[]
+  
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  
+  @@map("units")
+}
+
+// Floor Plan Information
+model FloorPlan {
+  id           String   @id @default(cuid())
+  propertyId   String?  @map("property_id")
+  unitId       String?  @map("unit_id")
+  
+  // Plan Details
+  title        String
+  planType     String   @map("plan_type") // 2D, 3D, Interactive
+  bedrooms     Int?
+  bathrooms    Float?
+  size         Float?   // in sqft
+  
+  // Files
+  imageUrl     String?  @map("image_url") // Main floor plan image
+  pdfUrl       String?  @map("pdf_url")   // PDF version
+  pages        Json?    // Multiple pages if PDF
+  
+  // Metadata
+  width        Int?     // Image width
+  height       Int?     // Image height
+  fileSize     Int?     @map("file_size") // File size in bytes
+  
+  // Relationships
+  property     Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit         Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  @@map("floor_plans")
+}
+
+// Property Images
+model PropertyImage {
+  id         String   @id @default(cuid())
+  propertyId String   @map("property_id")
+  
+  // Image Details
+  url        String
+  alt        String?
+  caption    String?
+  tag        ImageTag @default(GALLERY) // HERO, GALLERY, AMENITY, LOCATION, etc.
+  sortOrder  Int      @default(0) @map("sort_order")
+  
+  // Metadata
+  width      Int?
+  height     Int?
+  fileSize   Int?     @map("file_size")
+  
+  // Relationships
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  @@map("property_images")
+}
+
+// Unit Images
+model UnitImage {
+  id        String   @id @default(cuid())
+  unitId    String   @map("unit_id")
+  
+  // Image Details
+  url       String
+  alt       String?
+  caption   String?
+  tag       ImageTag @default(GALLERY)
+  sortOrder Int      @default(0) @map("sort_order")
+  
+  // Metadata
+  width     Int?
+  height    Int?
+  fileSize  Int?     @map("file_size")
+  
+  // Relationships
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("unit_images")
+}
+
+// Enums
+enum PropertyStatus {
+  UPCOMING
+  UNDER_CONSTRUCTION
+  READY
+  COMPLETED
+  SOLD_OUT
+}
+
+enum SalesStatus {
+  AVAILABLE
+  LIMITED_AVAILABILITY
+  SOLD_OUT
+  COMING_SOON
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+  INDUSTRIAL
+}
+
+enum UnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  NOT_AVAILABLE
+}
+
+enum ImageTag {
+  HERO
+  GALLERY
+  AMENITY
+  LOCATION
+  FLOOR_PLAN
+  EXTERIOR
+  INTERIOR
+  LIFESTYLE
+  MASTER_PLAN
+}
