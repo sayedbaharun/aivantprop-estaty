@@ -420,8 +420,8 @@ export class PropertySyncService {
           minArea: fullProperty.min_area,
           maxArea: fullProperty.max_area,
           areaUnit: fullProperty.area_unit || 'sqft',
-          latitude: fullProperty.latitude,
-          longitude: fullProperty.longitude,
+          latitude: this.parseCoordinateFromAddress(fullProperty.address, 'lat'),
+          longitude: this.parseCoordinateFromAddress(fullProperty.address, 'lng'),
           deliveryDate: this.parseDate(fullProperty.delivery_date),
           handoverYear: fullProperty.handover_year,
           handoverQuarter: fullProperty.handover_quarter,
@@ -451,8 +451,8 @@ export class PropertySyncService {
           minArea: fullProperty.min_area,
           maxArea: fullProperty.max_area,
           areaUnit: fullProperty.area_unit || 'sqft',
-          latitude: fullProperty.latitude,
-          longitude: fullProperty.longitude,
+          latitude: this.parseCoordinateFromAddress(fullProperty.address, 'lat'),
+          longitude: this.parseCoordinateFromAddress(fullProperty.address, 'lng'),
           deliveryDate: this.parseDate(fullProperty.delivery_date),
           handoverYear: fullProperty.handover_year,
           handoverQuarter: fullProperty.handover_quarter,
@@ -744,6 +744,35 @@ export class PropertySyncService {
       }
       return String(plan);
     });
+  }
+
+  /**
+   * Parse coordinates from address field
+   * Estaty API provides coordinates as "lat,lng" string in address field
+   */
+  private parseCoordinateFromAddress(address: unknown, type: 'lat' | 'lng'): number | null {
+    try {
+      if (!address || typeof address !== 'string') return null;
+      
+      // Check if address contains coordinates (lat,lng format)
+      const coordPattern = /^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/;
+      const match = address.trim().match(coordPattern);
+      
+      if (match) {
+        const latitude = parseFloat(match[1]);
+        const longitude = parseFloat(match[2]);
+        
+        // Validate Dubai coordinate ranges
+        // Dubai roughly: Lat 24.5-25.5, Lng 54.5-56.0
+        if (latitude >= 24.0 && latitude <= 26.0 && longitude >= 54.0 && longitude <= 57.0) {
+          return type === 'lat' ? latitude : longitude;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
   }
 
   /**

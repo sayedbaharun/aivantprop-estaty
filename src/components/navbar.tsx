@@ -31,6 +31,11 @@ const navigation = [
     icon: MapPinIcon,
   },
   {
+    name: 'Map',
+    href: '/map',
+    icon: MapPinIcon,
+  },
+  {
     name: 'Investment',
     href: '/investment',
     icon: ChartBarIcon,

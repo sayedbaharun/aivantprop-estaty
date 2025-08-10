@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -27,32 +30,21 @@ async function getDeveloper(slug: string) {
   }
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const data = await getDeveloper(slug);
-  const developer = data?.data?.developer;
-  
-  const title = developer?.name ? `${developer.name} | Developers | Off Plan Dub.ai` : 'Developer | Off Plan Dub.ai';
-  const description = developer?.description || `Explore premium properties from ${developer?.name || 'this developer'} in the UAE.`;
-  
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      images: developer?.logo ? [developer.logo] : undefined,
-    }
-  };
-}
+export default function DeveloperDetailPage({ params }: { params: { slug: string } }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function DeveloperDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const data = await getDeveloper(slug);
-  
-  if (!data?.success) {
-    notFound();
-  }
+  useEffect(() => {
+    async function fetchData() {
+      const result = await getDeveloper(params.slug);
+      setData(result);
+      setLoading(false);
+    }
+    fetchData();
+  }, [params.slug]);
+
+  if (loading) return <div className="max-w-4xl mx-auto p-8">Loading...</div>;
+  if (!data?.success) return notFound();
   
   const { developer, properties, projectsByStatus, stats } = data.data;
 
@@ -134,7 +126,7 @@ export default async function DeveloperDetailPage({ params }: { params: Promise<
             {/* Contact Info */}
             <div className="mt-6 lg:mt-0 bg-gray-50 rounded-xl p-6 min-w-[300px]">
               <h3 className="font-semibold text-gray-900 mb-4">Contact Information</h3>
-              <div className="space-y-3">
+              <div className="space-y-3 mb-6">
                 {developer.phone && (
                   <div className="flex items-center space-x-3">
                     <PhoneIcon className="w-5 h-5 text-gray-400" />
@@ -162,6 +154,51 @@ export default async function DeveloperDetailPage({ params }: { params: Promise<
                     </a>
                   </div>
                 )}
+              </div>
+
+              {/* Action CTAs */}
+              <div className="space-y-3">
+                <button 
+                  className="w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center"
+                  onClick={() => {
+                    const phone = developer.phone || '971501234567';
+                    const message = `Hi, I'm interested in ${developer.name}'s projects. Can we schedule a consultation?`;
+                    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Contact Developer
+                </button>
+
+                <button 
+                  className="w-full px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border border-gray-300 transition-colors duration-200 flex items-center justify-center"
+                  onClick={() => {
+                    const email = developer.email || 'info@offplandub.ai';
+                    const subject = `Portfolio Request - ${developer.name}`;
+                    const body = `Hi, I would like to request a complete portfolio of all ${developer.name} projects including floor plans, pricing, and payment plans.`;
+                    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Get All Projects
+                </button>
+
+                <button 
+                  className="w-full px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium rounded-lg border border-amber-200 transition-colors duration-200 flex items-center justify-center"
+                  onClick={() => {
+                    // Redirect to investment consultation
+                    window.location.href = `/investment?developer=${encodeURIComponent(developer.name)}`;
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Investment Consultation
+                </button>
               </div>
             </div>
           </div>

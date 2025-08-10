@@ -1,8 +1,8 @@
 export function NewsAndInsights() {
   const articles = [
-    { title: 'Dubai Off‑Plan Market: Trends & Insights', excerpt: 'Analyzing Q3 launches, absorption, and pricing dynamics across prime communities.', image: '/images/news1.jpg' },
-    { title: 'Top Payment Plans for Investors in 2025', excerpt: 'From post‑handover to guaranteed rental—what works best for your strategy.', image: '/images/news2.jpg' },
-    { title: 'Communities to Watch: 2025‑2026 Pipeline', excerpt: 'Key master‑planned developments reshaping the off‑plan landscape.', image: '/images/news3.jpg' },
+    { title: 'Dubai Off‑Plan Market: Trends & Insights', excerpt: 'Analyzing Q3 launches, absorption, and pricing dynamics across prime communities.', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' },
+    { title: 'Top Payment Plans for Investors in 2025', excerpt: 'From post‑handover to guaranteed rental—what works best for your strategy.', image: 'https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' },
+    { title: 'Communities to Watch: 2025‑2026 Pipeline', excerpt: 'Key master‑planned developments reshaping the off‑plan landscape.', image: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' },
   ];
 
   return (

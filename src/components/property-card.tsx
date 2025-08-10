@@ -1,3 +1,5 @@
+'use client';
+
 import { HeartIcon, MapPinIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 
 interface Property {
@@ -89,7 +91,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         </p>
 
         {/* Price and Area */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-lg font-bold text-gray-900">{price}</p>
             {property?.minArea && (
@@ -97,13 +99,80 @@ export function PropertyCard({ property }: PropertyCardProps) {
             )}
           </div>
           
-          {/* CTA Arrow */}
+          {/* View Property CTA Arrow */}
           <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-full flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
         </div>
+
+                            {/* Action CTAs */}
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      <button 
+                        className="px-2 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-medium rounded-lg transition-colors duration-200 flex items-center justify-center border border-teal-200"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(`mailto:info@offplandub.ai?subject=Brochure Request - ${property.title}&body=Hi, I would like to request a brochure for ${property.title}.`, '_blank');
+                        }}
+                        title="Download property brochure"
+                      >
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Brochure
+                      </button>
+                      
+                      <button 
+                        className="px-2 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg transition-colors duration-200 flex items-center justify-center border border-amber-200"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(`https://wa.me/971501234567?text=Hi, I would like to schedule a viewing for ${property.title}`, '_blank');
+                        }}
+                        title="Schedule property viewing"
+                      >
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        View
+                      </button>
+
+                      <button 
+                        className="px-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors duration-200 flex items-center justify-center border border-blue-200"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(`/map?property=${property.id}`, '_blank');
+                        }}
+                        title="View property on map"
+                      >
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Map
+                      </button>
+                    </div>
+
+        {/* Special CTA for "Price on request" properties */}
+        {(!property?.minPrice && !property?.maxPrice) && (
+          <button 
+            className="w-full px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs font-bold rounded-lg transition-all duration-200 flex items-center justify-center"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.open(`https://wa.me/971501234567?text=Hi, I would like to know the current price for ${property.title}`, '_blank');
+            }}
+            title="Get current property price"
+          >
+            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+            Get Current Price
+          </button>
+        )}
       </div>
 
       {/* Link Overlay */}
