@@ -3,11 +3,14 @@
  * Secure server-side API client for Estaty property data
  */
 
-const BASE_URL = process.env.ESTATY_BASE_URL!;
-const API_KEY = process.env.ESTATY_API_KEY!;
+const BASE_URL = process.env.ESTATY_BASE_URL || '';
+const API_KEY = process.env.ESTATY_API_KEY || '';
 
-if (!BASE_URL || !API_KEY) {
-  throw new Error('Missing required Estaty API configuration. Check your environment variables.');
+// Check configuration at runtime instead of build time
+function validateConfig() {
+  if (!BASE_URL || !API_KEY) {
+    throw new Error('Missing required Estaty API configuration. Check your environment variables.');
+  }
 }
 
 // Request/Response Types
@@ -173,6 +176,8 @@ async function estatyRequest<T>(
   endpoint: string,
   body?: Record<string, any>
 ): Promise<EstatyResponse<T>> {
+  validateConfig(); // Validate configuration at runtime
+  
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'POST',

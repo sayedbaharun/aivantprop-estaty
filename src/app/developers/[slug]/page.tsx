@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -15,38 +12,167 @@ import {
   HomeIcon,
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
+import { prisma } from '@/lib/db';
+
+interface PageProps {
+  params: Promise<{
+    slug: string;
+  }>;
+}
 
 async function getDeveloper(slug: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002'}/api/developers/${slug}`, {
-      cache: 'no-store'
+    const developer = await prisma.developer.findUnique({
+      where: { slug },
+      include: {
+        properties: {
+          include: {
+            city: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              }
+            },
+            district: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              }
+            },
+            images: {
+              where: { tag: 'HERO' },
+              take: 1,
+              select: { url: true, alt: true }
+            },
+            _count: {
+              select: {
+                units: true,
+                floorPlans: true,
+              }
+            }
+          },
+          orderBy: [
+            { salesStatus: 'asc' },
+            { createdAt: 'desc' }
+          ]
+        },
+        _count: {
+          select: {
+            properties: true
+          }
+        }
+      }
     });
-    
-    if (!res.ok) return null;
-    return res.json();
+
+    if (!developer) {
+      return null;
+    }
+
+    // Calculate developer statistics
+    const stats = {
+      totalProjects: developer._count.properties,
+      activeProjects: developer.properties.filter(p => 
+        p.salesStatus === 'AVAILABLE' || p.salesStatus === 'LIMITED_AVAILABILITY'
+      ).length,
+      completedProjects: developer.properties.filter(p => 
+        p.salesStatus === 'SOLD_OUT'
+      ).length,
+      totalUnits: developer.properties.reduce((sum, p) => sum + p._count.units, 0),
+      avgPrice: developer.properties.length > 0 
+        ? Math.round(
+            developer.properties
+              .filter(p => p.minPrice && p.minPrice > 0)
+              .reduce((sum, p, _, arr) => sum + (p.minPrice || 0), 0) / 
+            developer.properties.filter(p => p.minPrice && p.minPrice > 0).length
+          ) 
+        : 0,
+      priceRange: {
+        min: Math.min(...developer.properties.map(p => p.minPrice || 0).filter(p => p > 0)),
+        max: Math.max(...developer.properties.map(p => p.maxPrice || 0))
+      }
+    };
+
+    // Group properties by status
+    const projectsByStatus = {
+      active: developer.properties.filter(p => 
+        p.salesStatus === 'AVAILABLE' || p.salesStatus === 'LIMITED_AVAILABILITY'
+      ),
+      upcoming: developer.properties.filter(p => 
+        p.salesStatus === 'COMING_SOON'
+      ),
+      completed: developer.properties.filter(p => 
+        p.salesStatus === 'SOLD_OUT'
+      ),
+    };
+
+    // Transform properties for response
+    const transformedProperties = developer.properties.map(prop => ({
+      id: prop.id,
+      title: prop.title,
+      slug: prop.slug,
+      salesStatus: prop.salesStatus,
+      status: prop.status,
+      propertyType: prop.propertyType,
+      minPrice: prop.minPrice,
+      maxPrice: prop.maxPrice,
+      handoverYear: prop.handoverYear,
+      handoverQuarter: prop.handoverQuarter,
+      heroImage: prop.images[0]?.url || null,
+      city: prop.city,
+      district: prop.district,
+      unitCount: prop._count.units,
+      floorPlanCount: prop._count.floorPlans,
+    }));
+
+    return {
+      developer: {
+        id: developer.id,
+        name: developer.name,
+        slug: developer.slug,
+        logo: developer.logo,
+        description: developer.description,
+        website: developer.website,
+        phone: developer.phone,
+        email: developer.email,
+        headquarters: developer.headquarters,
+      },
+      properties: transformedProperties,
+      projectsByStatus,
+      stats
+    };
   } catch (error) {
     console.error('Failed to fetch developer:', error);
     return null;
   }
 }
 
-export default function DeveloperDetailPage({ params }: { params: { slug: string } }) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      const result = await getDeveloper(params.slug);
-      setData(result);
-      setLoading(false);
-    }
-    fetchData();
-  }, [params.slug]);
-
-  if (loading) return <div className="max-w-4xl mx-auto p-8">Loading...</div>;
-  if (!data?.success) return notFound();
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await getDeveloper(slug);
   
-  const { developer, properties, projectsByStatus, stats } = data.data;
+  if (!data) {
+    return {
+      title: 'Developer Not Found',
+    };
+  }
+
+  return {
+    title: `${data.developer.name} - Dubai Real Estate Developer`,
+    description: data.developer.description || `Explore ${data.developer.name}'s portfolio of ${data.stats.totalProjects} off-plan properties in Dubai.`,
+  };
+}
+
+export default async function DeveloperDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const data = await getDeveloper(slug);
+  
+  if (!data) {
+    notFound();
+  }
+  
+  const { developer, properties, projectsByStatus, stats } = data;
 
   const formatPrice = (price: number | null | undefined) => {
     if (!price) return 'Price on request';
@@ -103,12 +229,6 @@ export default function DeveloperDetailPage({ params }: { params: { slug: string
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{developer.name}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-                  {developer.establishedYear && (
-                    <span className="flex items-center space-x-1">
-                      <CalendarIcon className="w-4 h-4" />
-                      <span>Established {developer.establishedYear}</span>
-                    </span>
-                  )}
                   {developer.headquarters && (
                     <span className="flex items-center space-x-1">
                       <MapPinIcon className="w-4 h-4" />
@@ -158,47 +278,37 @@ export default function DeveloperDetailPage({ params }: { params: { slug: string
 
               {/* Action CTAs */}
               <div className="space-y-3">
-                <button 
+                <a 
+                  href={`https://wa.me/${(developer.phone || '971501234567').replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in ${developer.name}'s projects. Can we schedule a consultation?`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center"
-                  onClick={() => {
-                    const phone = developer.phone || '971501234567';
-                    const message = `Hi, I'm interested in ${developer.name}'s projects. Can we schedule a consultation?`;
-                    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
-                  }}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                   Contact Developer
-                </button>
+                </a>
 
-                <button 
+                <a 
+                  href={`mailto:${developer.email || 'info@offplandub.ai'}?subject=${encodeURIComponent(`Portfolio Request - ${developer.name}`)}&body=${encodeURIComponent(`Hi, I would like to request a complete portfolio of all ${developer.name} projects including floor plans, pricing, and payment plans.`)}`}
                   className="w-full px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border border-gray-300 transition-colors duration-200 flex items-center justify-center"
-                  onClick={() => {
-                    const email = developer.email || 'info@offplandub.ai';
-                    const subject = `Portfolio Request - ${developer.name}`;
-                    const body = `Hi, I would like to request a complete portfolio of all ${developer.name} projects including floor plans, pricing, and payment plans.`;
-                    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-                  }}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Get All Projects
-                </button>
+                </a>
 
-                <button 
+                <Link 
+                  href={`/investment?developer=${encodeURIComponent(developer.name)}`}
                   className="w-full px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium rounded-lg border border-amber-200 transition-colors duration-200 flex items-center justify-center"
-                  onClick={() => {
-                    // Redirect to investment consultation
-                    window.location.href = `/investment?developer=${encodeURIComponent(developer.name)}`;
-                  }}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                   Investment Consultation
-                </button>
+                </Link>
               </div>
             </div>
           </div>

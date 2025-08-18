@@ -4,16 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "npx prisma generate && next build",
+    "vercel-build": "npx prisma generate && npx prisma db push --skip-generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.1",
-    "@prisma/client": "^6.13.0",
+    "@prisma/client": "^6.14.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.10",
@@ -69,7 +71,7 @@
     "eslint-config-next": "15.4.6",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
-    "prisma": "^6.13.0",
+    "prisma": "^6.14.0",
     "tailwindcss": "^4",
     "tsx": "^4.20.3",
     "typescript": "^5"

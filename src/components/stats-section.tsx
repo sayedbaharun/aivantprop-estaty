@@ -1,11 +1,26 @@
-export async function StatsSection() {
-  const [syncRes, propertiesCount] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/sync?include_stats=true`, { next: { revalidate: 60 } }).then(r => r.json()).catch(() => null),
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/properties?limit=1`, { next: { revalidate: 60 } }).then(r => r.json()).catch(() => null),
-  ]);
+import { prisma } from '@/lib/db';
 
-  const stats = syncRes?.data?.stats || null;
-  const total = propertiesCount?.pagination?.totalCount || 0;
+export async function StatsSection() {
+  // During build time, fetch data directly from database instead of API
+  let stats = null;
+  let total = 0;
+  
+  try {
+    const [developers, cities, districts, properties] = await Promise.all([
+      prisma.developer.count(),
+      prisma.city.count(),
+      prisma.district.count(),
+      prisma.property.count(),
+    ]);
+    
+    stats = { developers, cities, districts };
+    total = properties;
+  } catch (error) {
+    // Fallback to default values if database is not available
+    console.error('Failed to fetch stats:', error);
+    stats = { developers: 0, cities: 0, districts: 0 };
+    total = 0;
+  }
 
   return (
     <section className="py-12 lg:py-16 bg-white border-b">
