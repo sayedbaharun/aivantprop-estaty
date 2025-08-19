@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "sync": "tsx scripts/sync.ts",
+    "sync:latest": "tsx scripts/sync-latest.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
