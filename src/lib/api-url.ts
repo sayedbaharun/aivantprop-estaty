@@ -7,11 +7,22 @@ export function getApiUrl() {
     return '';
   }
   
-  // For server-side requests in production (Vercel)
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+  // In production, try multiple options
+  if (process.env.NODE_ENV === 'production') {
+    // 1. Try VERCEL_PROJECT_PRODUCTION_URL (custom domain)
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+      return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+    }
+    
+    // 2. Try VERCEL_URL (deployment URL)
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    
+    // 3. Hardcode the production URL as fallback
+    return 'https://www.offplandub.ai';
   }
   
-  // For server-side requests in development
-  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  // For development
+  return 'http://localhost:3000';
 }
