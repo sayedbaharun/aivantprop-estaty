@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "npx prisma generate && next build",
-    "vercel-build": "npx prisma generate && npx prisma db push --skip-generate && next build",
+    "vercel-build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "sync": "tsx scripts/sync.ts",
