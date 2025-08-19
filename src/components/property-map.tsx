@@ -88,11 +88,17 @@ export function PropertyMap({
   // Center map on selected property
   useEffect(() => {
     if (selectedProperty && mapRef.current) {
-      mapRef.current.setView(
-        [selectedProperty.latitude, selectedProperty.longitude],
-        15,
-        { animate: true }
-      );
+      // Validate coordinates before setting view
+      const lat = selectedProperty.latitude;
+      const lng = selectedProperty.longitude;
+      
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        mapRef.current.setView(
+          [lat, lng],
+          15,
+          { animate: true }
+        );
+      }
     }
   }, [selectedProperty]);
 
@@ -148,7 +154,15 @@ export function PropertyMap({
 
   // Calculate map bounds
   const getMapBounds = () => {
-    if (properties.length === 0) {
+    // Filter out properties with invalid coordinates
+    const validProperties = properties.filter(p => 
+      p.latitude && p.longitude && 
+      !isNaN(p.latitude) && !isNaN(p.longitude) &&
+      p.latitude >= -90 && p.latitude <= 90 &&
+      p.longitude >= -180 && p.longitude <= 180
+    );
+
+    if (validProperties.length === 0) {
       // Default to Dubai coordinates
       return {
         center: [25.2048, 55.2708] as [number, number],
@@ -156,8 +170,8 @@ export function PropertyMap({
       };
     }
 
-    const lats = properties.map(p => p.latitude);
-    const lngs = properties.map(p => p.longitude);
+    const lats = validProperties.map(p => p.latitude);
+    const lngs = validProperties.map(p => p.longitude);
     
     const center: [number, number] = [
       lats.reduce((a, b) => a + b, 0) / lats.length,
@@ -203,7 +217,14 @@ export function PropertyMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       
-      {properties.map((property) => (
+      {properties
+        .filter(p => 
+          p.latitude && p.longitude && 
+          !isNaN(p.latitude) && !isNaN(p.longitude) &&
+          p.latitude >= -90 && p.latitude <= 90 &&
+          p.longitude >= -180 && p.longitude <= 180
+        )
+        .map((property) => (
         <Marker
           key={property.id}
           position={[property.latitude, property.longitude]}
