@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { DeveloperCard, DeveloperCardProps } from '@/components/developer-card';
+import { getApiUrl } from '@/lib/api-url';
 import { 
   MagnifyingGlassIcon, 
   FunnelIcon,
@@ -27,7 +28,7 @@ async function getDevelopers(searchParams: Record<string, string | string[] | un
       offset: offset.toString(),
     });
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002'}/api/developers?${params}`, {
+    const res = await fetch(`${getApiUrl()}/api/developers?${params}`, {
       cache: 'no-store'
     });
     

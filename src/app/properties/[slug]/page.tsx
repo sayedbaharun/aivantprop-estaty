@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
+import { getApiUrl } from '@/lib/api-url';
 import { FloorPlanExplorer } from '@/components/floor-plan-explorer';
 import { ContactForm } from '@/components/contact-form';
 import { StickyPropertyHeader } from '@/components/sticky-property-header';
@@ -8,7 +9,7 @@ import { PropertyLocationMap } from '@/components/dynamic-property-map';
 import { Metadata } from 'next';
 
 async function getData(slug: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/properties/${slug}`, { cache: 'no-store' });
+  const res = await fetch(`${getApiUrl()}/api/properties/${slug}`, { cache: 'no-store' });
   if (!res.ok) return null;
   return res.json();
 }

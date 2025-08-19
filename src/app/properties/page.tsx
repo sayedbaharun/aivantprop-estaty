@@ -1,4 +1,5 @@
 import { PropertyCard } from '@/components/property-card';
+import { getApiUrl } from '@/lib/api-url';
 
 async function getData(searchParams: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
@@ -9,7 +10,8 @@ async function getData(searchParams: Record<string, string | string[] | undefine
   params.set('include_developer', 'true');
   params.set('include_city', 'true');
   params.set('include_images', 'true');
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/properties?` + params.toString(), { cache: 'no-store' });
+  
+  const res = await fetch(`${getApiUrl()}/api/properties?` + params.toString(), { cache: 'no-store' });
   if (!res.ok) return { data: [], pagination: { totalCount: 0 } } as any;
   return res.json();
 }
